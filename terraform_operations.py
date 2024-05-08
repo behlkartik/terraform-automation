@@ -17,27 +17,24 @@ def run_command(cmd, *args, **kwargs):
         cmd, shell=True, stderr=subprocess.STDOUT, universal_newlines=True
     )
 
+def terraform_init(directory):
+    os.chdir(directory)
+    return run_command("terraform init")
+    
 
-def perform_operations():
-    tf_exist = run_command("terraform -version")
+def terraform_plan(directory):
+    os.chdir(directory)
+    return run_command("terraform plan -out=tfplan")
+    
+
+def process():
     for dir, subdirs, files in os.walk("."):
-        if ".terraform" not in dir:
-            logger.info(f"Processing terraform files from dir {dir}")
-            for file in files:
-                if "main.tf" in file:
-                    try:
-                        init_call = run_command(f"cd {dir} && terraform init && cd -")
-                    except subprocess.CalledProcessError as ex:
-                        logger.exception(
-                            "Failed to download and install required providers"
-                        )
-                    try:
-                        plan_call = run_command(
-                            f"cd {dir} && terraform plan -out {dir}/tfplan && cd -"
-                        )
-                    except subprocess.CalledProcessError as ex:
-                        logger.exception("Terraform plan failed")
+        if ".terraform" in dir:
+            os.removedirs(".terraform")
+        logger.info(f"Processing terraform files from dir {dir}")
+        terraform_init(dir)
+        terraform_plan(dir)
 
 
 if __name__ == "__main__":
-    perform_operations()
+    process(os.getcwd())
